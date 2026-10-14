@@ -9,6 +9,7 @@ const pool = new Pool({
 
 const PORT = process.env.PORT || 3000;
 const app = express();
+app.use(express.json());
 
 app.get('/', (req, res) => {
     res.send("Expense Tracker API");
@@ -25,8 +26,22 @@ app.get('/db-test', async (req, res) => {
 }
 });
 
-app.get('/hello', (req, res) => {
-    res.send('Hello route works');
+app.post('/expenses', async (req, res) => {
+    const { title, amount, category } = req.body;
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO expenses (title, amount, category)
+             VALUES ($1, $2, $3)
+             RETURNING *`,
+            [title, amount, category]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error("Database error:", error.message);
+        res.status(500).json({ error: "Failed to save expense" });
+    }
 });
 
 app.listen(PORT, () => {
